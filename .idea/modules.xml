@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/duckdbexplorer.iml" filepath="$PROJECT_DIR$/.idea/duckdbexplorer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/duckdb-tpch-dart.iml" filepath="$PROJECT_DIR$/.idea/duckdb-tpch-dart.iml" />
     </modules>
   </component>
 </project>

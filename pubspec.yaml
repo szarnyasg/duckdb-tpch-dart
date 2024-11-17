@@ -30,8 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  dart_duckdb:
-    path: ../../
+  dart_duckdb: ^1.1.3
   path_provider: ^2.0.11
   file_picker: ^5.0.0
 

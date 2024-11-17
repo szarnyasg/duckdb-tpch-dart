@@ -60,9 +60,10 @@ packages:
   dart_duckdb:
     dependency: "direct main"
     description:
-      path: "../.."
-      relative: true
-    source: path
+      name: dart_duckdb
+      sha256: b1dd4a399544d44784471006eb502c20f246424a388a793f9342b3f111c93507
+      url: "https://pub.dev"
+    source: hosted
     version: "1.1.3"
   fake_async:
     dependency: transitive
