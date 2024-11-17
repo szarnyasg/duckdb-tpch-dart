@@ -27,8 +27,8 @@ class SqlExecutorPage extends StatefulWidget {
 }
 
 typedef QueryResponse = ({
-  List<String> columns,
-  List<List<dynamic>> rows,
+//  List<String> columns,
+//  List<List<dynamic>> rows,
   int totalRows,
 });
 
@@ -42,8 +42,8 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
 
   Database? _database;
   Connection? _connection;
-  List<String> _columnNames = [];
-  List<List<dynamic>> _rows = [];
+  //List<String> _columnNames = [];
+  //List<List<dynamic>> _rows = [];
   int _limit = 10;
   int _offset = 0;
   int _totalRows = 0;
@@ -97,22 +97,10 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
 
         final stopwatch = Stopwatch()..start();
 
-        String query = _sqlController.text.trim();
-        query =
-            query.replaceAll(RegExp(r';+$'), ''); // Remove trailing semicolons
-
-        String countQuery = '';
-        if (query.toLowerCase().startsWith('select')) {
-          countQuery = 'SELECT COUNT(*) FROM (${query}) AS count_query';
-          query += " LIMIT $_limit OFFSET $_offset";
-        }
-
         await Isolate.spawn(
           _backgroundQueryTask,
           _QueryTaskParams(
             transferableDb: _database!.transferrable,
-            query: query,
-            countQuery: countQuery,
             sendPort: receivePort.sendPort,
           ),
         );
@@ -120,13 +108,13 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
         receivePort.listen((dynamic message) {
           if (message is QueryResponse) {
             setState(() {
-              _columnNames = message.columns;
-              _rows = message.rows;
+              // _columnNames = message.columns;
+              // _rows = message.rows;
               _totalRows = message.totalRows;
               stopwatch.stop();
               _executionTimeController.text =
                   '${stopwatch.elapsedMilliseconds} ms';
-              _totalRowCountController.text = 'Total: $_totalRows';
+              _totalRowCountController.text = '$_totalRows';
               _currentPageController.text =
                   'Page: ${(_offset / _limit).ceil() + 1}';
             });
@@ -151,19 +139,30 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
   static void _backgroundQueryTask(_QueryTaskParams params) {
     try {
       final connection = duckdb.connectWithTransferred(params.transferableDb);
-      final results = connection.query(params.query);
+
+      String query = "SELECT 42 AS x";
+      int totalRows = 3;
+
+      // String query = _sqlController.text.trim();
+      // query = query.replaceAll(RegExp(r';+$'), ''); // Remove trailing semicolons
+      //
+      // String countQuery = '';
+      // if (query.toLowerCase().startsWith('select')) {
+      //   countQuery = 'SELECT COUNT(*) FROM (${query}) AS count_query';
+      //   query += " LIMIT $_limit OFFSET $_offset";
+      // }
+
+      final results = connection.query(query);
       final columns = results.columnNames;
       final rows = results.fetchAll();
 
-      int totalRows = 0;
-      if (params.countQuery.isNotEmpty) {
-        final countResults = connection.query(params.countQuery);
-        totalRows = countResults.fetchAll().first.first as int;
-      }
+      // int totalRows = 0;
+      // if (params.countQuery.isNotEmpty) {
+      //   final countResults = connection.query(params.countQuery);
+      //   totalRows = countResults.fetchAll().first.first as int;
+      // }
 
       params.sendPort.send((
-        columns: columns,
-        rows: rows,
         totalRows: totalRows,
       ));
     } catch (e) {
@@ -189,7 +188,7 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('DuckDB Explorer'),
+        title: Text('DuckDB TPC-H benchmark'),
         actions: [
           IconButton(
             icon: Icon(Icons.folder_open),
@@ -212,7 +211,7 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
           ),
           ElevatedButton(
             onPressed: _executeQuery,
-            child: Text('Run SQL'),
+            child: Text('Run Benchmark'),
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -253,71 +252,67 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
               ],
             ),
           ),
-          Expanded(
-            child: _buildResultsTable(),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              ElevatedButton(
-                onPressed: _offset > 0 ? _loadPreviousPage : null,
-                child: Text('Previous'),
-              ),
-              ElevatedButton(
-                onPressed: _rows.length == _limit ? _loadNextPage : null,
-                child: Text('Next'),
-              ),
-            ],
-          ),
+          // Expanded(
+          //   child: _buildResultsTable(),
+          // ),
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          //   children: [
+          //     ElevatedButton(
+          //       onPressed: _offset > 0 ? _loadPreviousPage : null,
+          //       child: Text('Previous'),
+          //     ),
+          //     ElevatedButton(
+          //       onPressed: _rows.length == _limit ? _loadNextPage : null,
+          //       child: Text('Next'),
+          //     ),
+          //   ],
+          // ),
         ],
       ),
     );
   }
 
-  Widget _buildResultsTable() {
-    if (_columnNames.isEmpty) {
-      return Center(child: Text('No results to display.'));
-    }
-
-    List<DataColumn> columns =
-        _columnNames.map((key) => DataColumn(label: Text(key))).toList();
-
-    List<DataRow> rows = _rows.map((row) {
-      return DataRow(
-        cells: row.map((value) => DataCell(Text(value.toString()))).toList(),
-      );
-    }).toList();
-
-    return Scrollbar(
-      controller: _verticalScrollController,
-      thumbVisibility: true,
-      child: SingleChildScrollView(
-        controller: _verticalScrollController,
-        scrollDirection: Axis.vertical,
-        child: Scrollbar(
-          controller: _horizontalScrollController,
-          thumbVisibility: true,
-          child: SingleChildScrollView(
-            controller: _horizontalScrollController,
-            scrollDirection: Axis.horizontal,
-            child: DataTable(columns: columns, rows: rows),
-          ),
-        ),
-      ),
-    );
-  }
+  // Widget _buildResultsTable() {
+  //   if (_columnNames.isEmpty) {
+  //     return Center(child: Text('No results to display.'));
+  //   }
+  //
+  //   List<DataColumn> columns =
+  //       _columnNames.map((key) => DataColumn(label: Text(key))).toList();
+  //
+  //   List<DataRow> rows = _rows.map((row) {
+  //     return DataRow(
+  //       cells: row.map((value) => DataCell(Text(value.toString()))).toList(),
+  //     );
+  //   }).toList();
+  //
+  //   return Scrollbar(
+  //     controller: _verticalScrollController,
+  //     thumbVisibility: true,
+  //     child: SingleChildScrollView(
+  //       controller: _verticalScrollController,
+  //       scrollDirection: Axis.vertical,
+  //       child: Scrollbar(
+  //         controller: _horizontalScrollController,
+  //         thumbVisibility: true,
+  //         child: SingleChildScrollView(
+  //           controller: _horizontalScrollController,
+  //           scrollDirection: Axis.horizontal,
+  //           child: DataTable(columns: columns, rows: rows),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 }
 
 class _QueryTaskParams {
   final TransferableDatabase transferableDb;
-  final String query;
-  final String countQuery;
   final SendPort sendPort;
 
   _QueryTaskParams({
     required this.transferableDb,
-    required this.query,
-    required this.countQuery,
     required this.sendPort,
   });
 }
