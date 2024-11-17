@@ -29,6 +29,7 @@ class SqlExecutorPage extends StatefulWidget {
 typedef QueryResponse = ({
 //  List<String> columns,
 //  List<List<dynamic>> rows,
+  List<int> numRowsList,
   int totalRows,
 });
 
@@ -110,13 +111,13 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
             setState(() {
               // _columnNames = message.columns;
               // _rows = message.rows;
+              _sqlController.text = message.numRowsList.toString();
               _totalRows = message.totalRows;
               stopwatch.stop();
               _executionTimeController.text =
                   '${stopwatch.elapsedMilliseconds} ms';
               _totalRowCountController.text = '$_totalRows';
-              _currentPageController.text =
-                  'Page: ${(_offset / _limit).ceil() + 1}';
+              //_currentPageController.text = 'Page: ${(_offset / _limit).ceil() + 1}';
             });
             completer.complete();
           } else if (message is String) {
@@ -140,8 +141,7 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
     try {
       final connection = duckdb.connectWithTransferred(params.transferableDb);
 
-      // String query = "SELECT 42 AS x";
-      // int totalRows = 3;
+      connection.query("PRAGMA threads = 1;");
 
       List<String> queries = [
         """
@@ -802,17 +802,16 @@ ORDER BY
       // String query = _sqlController.text.trim();
       // query = query.replaceAll(RegExp(r';+$'), ''); // Remove trailing semicolons
       //
-      // String countQuery = '';
-      // if (query.toLowerCase().startsWith('select')) {
-      //   countQuery = 'SELECT COUNT(*) FROM (${query}) AS count_query';
-      //   query += " LIMIT $_limit OFFSET $_offset";
-      // }
 
+      List<int> numRowsList = [];
       for (var query in queries) {
-        final results = connection.query(query);
-        final columns = results.columnNames;
-        final rows = results.fetchAll();
-        totalRows += rows.length;
+        query = query.replaceAll(RegExp(r';+\s$'), ''); // Remove trailing semicolons
+        String countQuery = 'SELECT count(*) FROM (${query}) AS count_query';
+
+        // final results = connection.query(query);
+        final numRows = connection.query(countQuery).fetchAll().first.first as int;
+        numRowsList.add(numRows);
+        totalRows += numRows;
       }
 
       // int totalRows = 0;
@@ -822,6 +821,7 @@ ORDER BY
       // }
 
       params.sendPort.send((
+        numRowsList: numRowsList,
         totalRows: totalRows,
       ));
     } catch (e) {
