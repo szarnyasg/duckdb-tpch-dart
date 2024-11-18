@@ -142,7 +142,7 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
       final connection = duckdb.connectWithTransferred(params.transferableDb);
 
       connection.query("PRAGMA threads = 2;");
-      connection.query("SET memory_limit = '10GB';");
+      connection.query("SET memory_limit = '8GB';");
       connection.query("SET max_temp_directory_size = '100GB';");
 
       List<String> queries = [
